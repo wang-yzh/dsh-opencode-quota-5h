@@ -3,8 +3,9 @@
  *
  * 并入 Harness 官方输入框下方的底栏状态行(`conversation.composer.dock`),
  * 以最小 order 排在最左,和官方「会话统计 / Token 用量 / 上下文」药丸并排。
- * 点击药丸展开一个官方 StatDialog 风格的详情浮层:三个窗口的已用 / 剩余 /
- * 重置时间,可手动刷新,也可打开 OpenCode Console。
+ * 药丸只显示 5 小时窗口的已用百分比;点击药丸展开的官方 StatDialog 风格
+ * 详情浮层仍展示全部窗口的已用 / 剩余 / 重置时间,可手动刷新,也可打开
+ * OpenCode Console。
  *
  * 数据来自同源 GET /opencode-quota/stats(Host 半缓存),每 60 秒刷新,
  * 页面重新可见时立即刷新。视觉上复制官方药丸与统计弹层的结构与 token,
@@ -28,6 +29,8 @@ window.__ModuleLoader__.load({
     const REFRESH_MS = 60_000;
     const ORDER = -10;
     const PERIOD_KEYS = ["rolling", "weekly", "monthly"];
+    // 药丸只展示 5 小时(rolling)窗口;详情浮层仍按 PERIOD_KEYS 展示全部窗口。
+    const PILL_PERIOD_KEYS = ["rolling"];
     const PANEL_MARGIN = 12;
     const PANEL_GAP = 8;
 
@@ -146,7 +149,7 @@ window.__ModuleLoader__.load({
     function buildTitle(t, periods) {
       if (!periods) return t("label");
       const parts = [t("label")];
-      for (const key of PERIOD_KEYS) {
+      for (const key of PILL_PERIOD_KEYS) {
         const period = periods[key];
         if (!period) continue;
         parts.push(`${t(key)} ${t("used")} ${period.percent}%`);
@@ -269,7 +272,7 @@ window.__ModuleLoader__.load({
         children = h("span", null, t("loading"));
       } else {
         children = [];
-        for (const key of PERIOD_KEYS) {
+        for (const key of PILL_PERIOD_KEYS) {
           const period = periods[key];
           if (!period || typeof period.percent !== "number") continue;
           if (children.length > 0) {

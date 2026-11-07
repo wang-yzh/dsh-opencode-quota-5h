@@ -1,14 +1,16 @@
-# dsh-opencode-quota
+# dsh-opencode-quota（5 小时药丸版）
 
-> OpenCode Go 订阅额度状态条：在 DeepSeek Harness Web GUI 输入框下方的官方状态行里，显示 **5 小时 / 每周 / 每月** 的已用百分比，点击展开详情。
+> OpenCode Go 订阅额度状态条：底栏药丸只显示 **5 小时** 窗口的已用百分比；点击展开的详情浮层仍显示 **5 小时 / 每周 / 每月** 三个窗口。
+
+本仓库是 [wang-yzh/dsh-opencode-quota](https://github.com/wang-yzh/dsh-opencode-quota) 的个人变体，仅调整底栏药丸的显示范围，其余逻辑与上游一致。
 
 插件以最小的 `order` 并入 Harness 官方的底栏状态行 `conversation.composer.dock`（官方「会话统计 / Token 用量 / 上下文」药丸所在的那一行），不另开整条状态栏、不遮挡聊天区。
 
 ## 效果
 
-- 药丸常驻在官方状态行最左边：`◔ 5小时 3% · 每周 1% · 每月 0%`
+- 药丸常驻在官方状态行最左边，只显示 5 小时窗口：`◔ 5小时 3%`
 - 百分比为**已用**比例，颜色分级：绿 < 60% / 黄 < 85% / 红 ≥ 85%
-- 点击药丸展开官方 StatDialog 风格的浮层：每个窗口的已用 %、剩余 %、重置时间、进度条
+- 点击药丸展开官方 StatDialog 风格的浮层，展示 5 小时 / 每周 / 每月 三个窗口的已用 %、剩余 %、重置时间、进度条
 - 浮层底部可「刷新」立即重查，或打开 OpenCode Console 查看完整用量
 - `Esc` 或点击浮层外部关闭；每 60 秒自动刷新，页面重新可见时立即刷新
 - 全部使用宿主主题 token，浅色 / 深色自动适配
@@ -61,10 +63,10 @@ dsh plugin --profile web add /path/to/dsh-opencode-quota
 从 GitHub 安装：
 
 ```sh
-dsh plugin --profile desktop add github:wang-yzh/dsh-opencode-quota
+dsh plugin --profile desktop add github:wang-yzh/dsh-opencode-quota-5h
 ```
 
-仓库地址：<https://github.com/wang-yzh/dsh-opencode-quota>
+仓库地址：<https://github.com/wang-yzh/dsh-opencode-quota-5h>
 
 也可以在 Harness 的 设置 → 插件 里通过插件管理器安装本地目录 / 仓库地址。
 
