@@ -1,16 +1,15 @@
 {
-  "name": "dsh-opencode-quota",
+  "name": "dsh-opencode-quota-5h",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
-  "description": "OpenCode Go 用量状态条：在 DeepSeek Harness 输入框下方的官方状态行显示 5 小时 / 每周 / 每月 额度百分比，点击展开详情。",
-  "homepage": "https://github.com/wang-yzh/dsh-opencode-quota#readme",
+  "description": "OpenCode Go 用量状态条（5 小时药丸版）：底栏药丸只显示 5 小时窗口的已用百分比，点击展开的详情浮层保留 5 小时 / 每周 / 每月 三个窗口。",
+  "homepage": "https://github.com/wang-yzh/dsh-opencode-quota-5h#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wang-yzh/dsh-opencode-quota.git"
+    "url": "git+https://github.com/wang-yzh/dsh-opencode-quota-5h.git"
   },
   "bugs": {
-    "url": "https://github.com/wang-yzh/dsh-opencode-quota/issues"
+    "url": "https://github.com/wang-yzh/dsh-opencode-quota-5h/issues"
   },
   "author": "wang-yzh",
   "keywords": [
@@ -41,7 +40,9 @@
     "LICENSE"
   ],
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true

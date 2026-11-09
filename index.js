@@ -1,5 +1,5 @@
 /**
- * dsh-opencode-quota:OpenCode Go 用量底栏状态条(Host 半)。
+ * dsh-opencode-quota-5h:OpenCode Go 用量底栏状态条(Host 半)。
  *
  * 查询 OpenCode Go 订阅用量接口:
  *
@@ -17,7 +17,7 @@
  * 自动注销。该路由不在 Harness `/api` 前缀下,因此用
  * `ctx.connection.requestRejection` 补上 Host/Origin 栅栏与浏览器 cookie 鉴权。
  *
- * @module dsh-opencode-quota
+ * @module dsh-opencode-quota-5h
  */
 
 export const name = "opencode-quota";

@@ -1,6 +1,6 @@
-# dsh-opencode-quota bundle patch:把底栏额度条挂进 profile 的 host 组合。
+# dsh-opencode-quota-5h bundle patch:把底栏额度条挂进 profile 的 host 组合。
 # Host 半解析 credentials(OPENCODE_GO_API_KEY),查询 OpenCode Go 官方用量接口,
 # 提供同源 GET /opencode-quota/stats 供浏览器底栏读取。API key 不出 Host 进程。
 - insert:
     - id: opencode-quota
-      name: dsh-opencode-quota
+      name: dsh-opencode-quota-5h

@@ -1,5 +1,5 @@
 /**
- * dsh-opencode-quota:OpenCode Go 用量状态条(Client 半)。
+ * dsh-opencode-quota-5h:OpenCode Go 用量状态条(Client 半)。
  *
  * 并入 Harness 官方输入框下方的底栏状态行(`conversation.composer.dock`),
  * 以最小 order 排在最左,和官方「会话统计 / Token 用量 / 上下文」药丸并排。
@@ -12,7 +12,7 @@
  * 不依赖 ui-primitives。
  */
 window.__ModuleLoader__.load({
-  id: "dsh-opencode-quota",
+  id: "dsh-opencode-quota-5h",
   factory(require) {
     const React = require("react");
     const h = React.createElement;
@@ -406,7 +406,7 @@ window.__ModuleLoader__.load({
       apply(ctx) {
         ctx.effect(() => {
           const style = document.createElement("style");
-          style.dataset.plugin = "dsh-opencode-quota";
+          style.dataset.plugin = "dsh-opencode-quota-5h";
           style.textContent = CSS;
           document.head.appendChild(style);
           return () => {
