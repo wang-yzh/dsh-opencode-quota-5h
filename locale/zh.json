@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "OpenCode 额度底栏",
-    "description": "在 Harness 底栏显示 OpenCode Go 的 5 小时 / 每周 / 每月 用量百分比。"
+    "description": "在 Harness 底栏显示 OpenCode Go 的 5 小时 / 每周 / 每月 用量百分比，并按套餐时间标出应到进度。"
   }
 }

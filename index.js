@@ -30,6 +30,12 @@ const REQUEST_TIMEOUT_MS = 12_000;
 const ROUTE_PATH = "/opencode-quota/stats";
 const CREDENTIAL_REF_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const PERIOD_KEYS = ["rolling", "weekly", "monthly"];
+// 套餐节奏：5 小时 / 每周窗口固定长度，每月按 resetsAt 倒推一个 UTC 日历月。
+const ROLLING_WINDOW_MS = 5 * 60 * 60 * 1000;
+const WEEKLY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const OVERSHOOT_WARN_PP = 5;
+const ROLLING_CAP_WARN_PERCENT = 90;
+const STALE_AFTER_MS = 60 * 1000;
 
 function resolveConfig(raw, warn) {
   const config = raw && typeof raw === "object" ? raw : {};
@@ -142,6 +148,102 @@ function projectPeriod(key, raw) {
   };
 }
 
+/** 从 resetsAt 倒推一个 UTC 日历月；目标月没有该日时收拢到当月最后一天。 */
+function subtractMonthUtc(ms) {
+  const date = new Date(ms);
+  const targetMonth = date.getUTCMonth() - 1;
+  const targetYear = date.getUTCFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+  const daysInTargetMonth = new Date(
+    Date.UTC(targetYear, normalizedMonth + 1, 0),
+  ).getUTCDate();
+  return Date.UTC(
+    targetYear,
+    normalizedMonth,
+    Math.min(date.getUTCDate(), daysInTargetMonth),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+    date.getUTCMilliseconds(),
+  );
+}
+
+function windowStartMs(key, endMs) {
+  if (key === "monthly") return subtractMonthUtc(endMs);
+  return endMs - (key === "weekly" ? WEEKLY_WINDOW_MS : ROLLING_WINDOW_MS);
+}
+
+/**
+ * 单个窗口的「应到」位置。resetsAt 不可用、窗口长度非法或已过期时返回
+ * null：宁可让这一行不显示目标，也不拿旧窗口的 100% 去误导颜色。
+ */
+function computeWindowPace(key, period, nowMs) {
+  if (!period || typeof period.percent !== "number" || !Number.isFinite(period.percent)) {
+    return null;
+  }
+  const endMs = typeof period.resetsAt === "string" ? Date.parse(period.resetsAt) : NaN;
+  if (!Number.isFinite(endMs)) return null;
+  const startMs = windowStartMs(key, endMs);
+  const durationMs = endMs - startMs;
+  if (!(durationMs > 0)) return null;
+  if (nowMs > endMs + STALE_AFTER_MS) return null;
+
+  const elapsedMs = Math.min(durationMs, Math.max(0, nowMs - startMs));
+  const targetPercent = (elapsedMs / durationMs) * 100;
+  const deltaPercent = period.percent - targetPercent;
+  let state;
+  if (period.percent >= 100) state = "over";
+  else if (deltaPercent <= 0) state = "under";
+  else if (deltaPercent < OVERSHOOT_WARN_PP) state = "near";
+  else state = "over";
+
+  return {
+    targetPercent,
+    dailyPercent: key === "rolling" ? null : 100 / (durationMs / 86_400_000),
+    deltaPercent,
+    state,
+    unlimited: false,
+  };
+}
+
+/** 三个窗口的节奏快照；5 小时窗口在月度低于应到时标为无限制。 */
+function computePace(periods, nowMs) {
+  const windows = {};
+  if (periods && typeof periods === "object") {
+    for (const key of PERIOD_KEYS) {
+      const pace = computeWindowPace(key, periods[key], nowMs);
+      if (pace !== null) windows[key] = pace;
+    }
+  }
+  const monthly = windows.monthly;
+  const rolling = windows.rolling;
+  const monthlyPeriod = periods && typeof periods === "object" ? periods.monthly : null;
+  const monthlyUnder =
+    monthly !== void 0 &&
+    monthlyPeriod !== null &&
+    monthlyPeriod !== void 0 &&
+    typeof monthlyPeriod.percent === "number" &&
+    monthlyPeriod.percent < monthly.targetPercent;
+
+  if (rolling !== void 0) {
+    const rollingPercent = periods.rolling.percent;
+    if (rollingPercent >= 100) {
+      rolling.state = "over";
+      rolling.unlimited = false;
+    } else if (monthlyUnder) {
+      if (rollingPercent >= ROLLING_CAP_WARN_PERCENT) {
+        rolling.state = "cap";
+        rolling.unlimited = false;
+      } else {
+        rolling.state = "unlimited";
+        rolling.unlimited = true;
+      }
+    }
+  }
+
+  return { at: nowMs, windows };
+}
+
 async function collectUsage(ctx, config) {
   const apiKey = await resolveApiKey(ctx, config.credentialRef);
   const usage = await fetchUsage(config.apiBaseUrl, apiKey);
@@ -153,11 +255,13 @@ async function collectUsage(ctx, config) {
   if (Object.keys(periods).length === 0) {
     throw usageError("usage API returned no usable periods", "upstream_error");
   }
+  const generatedAt = Date.now();
   return {
     ok: true,
     provider: "opencode-go",
-    generatedAt: Date.now(),
+    generatedAt,
     periods,
+    pace: computePace(periods, generatedAt),
   };
 }
 
@@ -262,4 +366,7 @@ export const _internals = {
   projectPeriod,
   resolveConfig,
   sendJson,
+  subtractMonthUtc,
+  computeWindowPace,
+  computePace,
 };
