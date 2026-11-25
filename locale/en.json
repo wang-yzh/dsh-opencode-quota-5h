@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "OpenCode quota bar",
-    "description": "Shows OpenCode Go 5-hour, weekly, and monthly usage percentages in the Harness bottom bar, with pace targets based on the billing cycle."
+    "description": "Shows OpenCode Go 5-hour, weekly, and monthly usage percentages in the Harness bottom bar, with time-based targets for the billing cycle."
   }
 }

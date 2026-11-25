@@ -50,16 +50,19 @@ window.__ModuleLoader__.load({
       refresh: "刷新",
       console: "OpenCode Console",
       close: "关闭",
-      target: "应到 {n}%",
+      target: "时间应到 {n}%",
       perDay: "每天应花 {n}%",
-      elapsed: "本轮已过 {n}%",
-      deltaBelow: "比应到少 {n} 个百分点",
-      deltaAbove: "比应到多 {n} 个百分点",
-      deltaEven: "与应到持平",
+      timeLeft: "还剩 {n}",
+      hoursMinutes: "{h} 小时 {m} 分",
+      minutesOnly: "{m} 分钟",
+      deltaBelow: "比时间进度慢 {n} 个百分点",
+      deltaAbove: "比时间进度快 {n} 个百分点",
+      deltaEven: "与时间进度持平",
       unlimited: "无限制",
       capNear: "接近上限",
       capHint: "5 小时窗口最多使用月度额度的 20%",
-      unlimitedHint: "「无限制」是节奏提示：月度未超应到时不按 5 小时时间线提示；5 小时窗口本身仍有 20% 月额度上限。",
+      unlimitedHint: "「无限制」是节奏提示：月度未超时间应到时不按 5 小时时间线提示；5 小时窗口本身仍有 20% 月额度上限。",
+      legend: "已用/剩余是各窗口自己的额度（5小时=月度的20%，每周=50%）；应到是时间进度。",
     };
     const en = {
       label: "OpenCode Go quota",
@@ -77,16 +80,19 @@ window.__ModuleLoader__.load({
       refresh: "Refresh",
       console: "OpenCode Console",
       close: "Close",
-      target: "Target {n}%",
+      target: "Time target {n}%",
       perDay: "Daily budget {n}%",
-      elapsed: "{n}% elapsed",
-      deltaBelow: "{n} pts below target",
-      deltaAbove: "{n} pts above target",
-      deltaEven: "On target",
+      timeLeft: "{n} left",
+      hoursMinutes: "{h}h {m}m",
+      minutesOnly: "{m}m",
+      deltaBelow: "{n} pts behind schedule",
+      deltaAbove: "{n} pts ahead of schedule",
+      deltaEven: "On schedule",
       unlimited: "Unlimited",
       capNear: "Near cap",
       capHint: "The 5-hour window is capped at 20% of the monthly allowance.",
-      unlimitedHint: "\"Unlimited\" is a pace hint: when monthly usage is below target, the 5-hour window is not flagged by its time line. The 20% monthly cap still applies.",
+      unlimitedHint: "\"Unlimited\" is a pace hint: when monthly usage is below the time target, the 5-hour window is not flagged by its time line. The 20% monthly cap still applies.",
+      legend: "Used / remaining are each window's own quota (5h = 20% of monthly, weekly = 50%); target is time elapsed.",
     };
 
     // 官方 StatsPills 药丸 + StatDialog 弹层的同等样式,类名前缀改为 ocq_。
@@ -105,7 +111,8 @@ window.__ModuleLoader__.load({
       ".ocq_panelTitleLabel{align-items:center;gap:6px;min-width:0;display:inline-flex}",
       ".ocq_panelTitleLabel svg{flex:none;width:14px;height:14px}",
       ".ocq_panelTitleValue{color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums;font-weight:400;white-space:nowrap}",
-      ".ocq_rule{border-top:.5px solid var(--dsw-alias-border-l2);margin:0 0 10px}",
+      ".ocq_rule{border-top:.5px solid var(--dsw-alias-border-l2);margin:0 0 8px}",
+      ".ocq_legend{color:var(--dsw-alias-label-tertiary);margin:0 0 10px;font-size:11px;line-height:15px}",
       ".ocq_row+.ocq_row{margin-top:10px}",
       ".ocq_rowHead{align-items:baseline;gap:6px;display:flex;flex-wrap:wrap}",
       ".ocq_rowName{color:var(--dsw-alias-label-primary);font-weight:500;flex:none}",
@@ -160,10 +167,25 @@ window.__ModuleLoader__.load({
       return t("target").replace("{n}", String(Math.round(pace.targetPercent)));
     }
 
-    function formatDaily(t, key, pace) {
+    function formatRemaining(t, value) {
+      if (typeof value !== "string" || value.length === 0) return "";
+      const end = Date.parse(value);
+      if (!Number.isFinite(end)) return "";
+      const ms = end - Date.now();
+      if (ms <= 0) return "";
+      const totalMinutes = Math.max(1, Math.round(ms / 60_000));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return hours > 0
+        ? t("hoursMinutes").replace("{h}", String(hours)).replace("{m}", String(minutes))
+        : t("minutesOnly").replace("{m}", String(minutes));
+    }
+
+    function formatDaily(t, key, pace, period) {
       if (!pace) return "";
       if (key === "rolling") {
-        return t("elapsed").replace("{n}", String(Math.round(pace.targetPercent)));
+        const left = formatRemaining(t, period && period.resetsAt);
+        return left === "" ? "" : t("timeLeft").replace("{n}", left);
       }
       if (typeof pace.dailyPercent !== "number" || !Number.isFinite(pace.dailyPercent)) return "";
       return t("perDay").replace("{n}", pace.dailyPercent.toFixed(1));
@@ -394,7 +416,7 @@ window.__ModuleLoader__.load({
             const color = stateColor(windowPace && windowPace.state);
             const reset = formatReset(period.resetsAt);
             const target = formatTarget(t, windowPace);
-            const daily = formatDaily(t, key, windowPace);
+            const daily = formatDaily(t, key, windowPace, period);
             const delta = formatDelta(t, windowPace);
             const remaining =
               typeof period.remainingPercent === "number"
@@ -500,6 +522,7 @@ window.__ModuleLoader__.load({
             updated !== "" ? h("span", { className: "ocq_panelTitleValue" }, `${t("updated")} ${updated}`) : null,
           ),
           h("div", { className: "ocq_rule" }),
+          h("div", { className: "ocq_legend" }, t("legend")),
           ...rows,
           showUnlimitedNote
             ? h("div", { className: "ocq_note" }, t("unlimitedHint"))
